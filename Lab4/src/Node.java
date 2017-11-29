@@ -1,24 +1,31 @@
+import java.awt.geom.Point2D;
 
-public class Node { //Node Environment to setup
-	private double x = 0;
-	private double y = 0;
-	
-	public Node(double xIn,double yIN) { //Constructor that creates the Nodes
-		x = xIn;
-		y = yIN;
+/**
+ * Kyle Webster and Jesse Arstein
+ * Finished November 28, 2017
+ */
+
+public class Node extends Point2D.Double { //Chose Point2D to simplify the sorting and storing of 2D points
+	public String name;
+	public Node(double x, double y, String name)
+	{
+		super(x,y); //makes a 2D (x,y) point
+		this.name = name; //names the Node for simplifying the
 	}
-	
-	public double getX() {
-		return x;
+	public Node(double x, double y)
+	{
+		this(x,y,x+"_"+y);
 	}
-	public double getY() {
-		return y;
+
+
+	public String toString() //prints the value of the point
+	{
+		return "("+x+","+y+")";
 	}
-	public double[] getArrayOfXandY(){ // An array that will be return containing the points for easy access. 
-		double[] tempArray = new double[2];
-		tempArray[0] = x;
-		tempArray[1] = y;
-		return tempArray;
-		
+
+	public boolean equals(Object o) //assumes the Object o is a Node
+	{
+		Node inNode = (Node)o;
+		return this.name.equals(inNode.name);
 	}
 }

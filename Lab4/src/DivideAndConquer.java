@@ -2,11 +2,18 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.lang.Math;
-
+import java.util.Arrays;
+import java.util.Comparator;
+/**
+ * Kyle Webster and Jesse Arstein
+ * Finished November 28, 2017
+ */
 public class DivideAndConquer {
-	String inputFilePath = "input.txt"; // Easy filename access.
-	int nodeAmount = this.readInCount(inputFilePath); // Amount of nodes created
-	Node[] nodeArray = new Node[nodeAmount]; // Array to index all nodes
+	private String inputFilePath = "input.txt"; // Easy filename access.
+	private int nodeAmount = this.readInCount(inputFilePath); // Amount of nodes created
+	private Node[] nodeArray = new Node[nodeAmount]; // Array to index all nodes
+	private double minimum = 999999999; //maximum double, anything else has to be smaller than this starting point
+	private Node[] minimumPoint = new Node[2]; //the shortest distance will be between 2 nodes, saved here
 
 	private int readInCount(String inputFilePath) { // Method to read in node count
 		int lineCount = 0;
@@ -47,104 +54,116 @@ public class DivideAndConquer {
 			double y = Double.parseDouble(bufferStringArray[1]); //parses the double from the array.
 			nodeArray[i] = new Node(x,y); // Creates Node and indexes
 		}
-		System.out.println("Nodes have been indexed.");
 	}
 
-	public Node[] getNodeArray() {
-		return nodeArray;
-	}
-
-	public void merge(Node[] arr, int l, int m, int r)
+	public void shortestDistance()
 	{
-		int n1 = m - l + 1;
-		int n2 = r - m;
-		Node L[] = new Node [n1];
-		Node R[] = new Node [n2];
-		for (int i=0; i<n1; i++) {
-			L[i] = arr[l + i];
-		}
-		for (int j=0; j<n2; j++) {
-			R[j] = arr[m + 1 + j];
-		}
-		int i = 0, j = 0;
-		int k = l;
-		while (i < n1 && j < n2) {
-			if (L[i].getX() <= R[j].getX()) {
-				arr[k] = L[i];
-				i++;
-			}
-			else if(L[i].getX()> R[j].getX()) {
-				arr[k] = R[j];
-				j++;
-			}
-			else if(L[i].getY()> R[j].getY()) {
-				arr[k] = R[j];
-				j++;
-			}
-			else {
-				arr[k] = L[i];
-				i++;
-			}
-			k++;
-		}
-		while (i < n1) {
-			arr[k] = L[i];
-			i++;
-			k++;
-		}
-		while (j < n2) {
-			arr[k] = R[j];
-			j++;
-			k++;
-		}
+		Arrays.sort(nodeArray, xComparator);//uses the Arrays java util to sort the nodeArray by x values then y values
+		System.out.println(Arrays.toString(nodeArray)); //prints node for easy reference
+		findClosestPoints(nodeArray); //recursive algorithm that will find the shortest on the left
 
+		int left = nodeArray.length / 2;//this is a recall of the recursive algorithm for the right points
+		int right = nodeArray.length / 2 + nodeArray.length%2;
+
+		Node[] nRight = new Node[right];
+		for (int i = 0; i < right; i++)
+			nRight[i] = nodeArray[i + left];
+		findClosestPoints(nRight);
+		System.out.println("Final Result: Closest pair: " + Arrays.toString(minimumPoint) + ", Distance = " + minimum); //prints the final results
 	}
 
-	public Node[] sort(Node[] inNode, int l, int r)
+	public Node[] findClosestPoints(Node[] inNode) //recursive algorithm seperates the array until size 1 or 2
 	{
-		if (l < r)
+			Node[] leftMin, rightMin, closest;
+			closest = inNode;
+			int n = inNode.length-1;
+			if (n > 2) {
+				System.out.println("Solving Problem at Point " + inNode[0].toString() + " ... Point[" + inNode[n].toString() + "]");
+				System.out.println("Dividing at Point[" + inNode[n/2].toString() + "]");
+				int left = n / 2;
+				int right = n / 2 + n%2;
+
+				// the set datas
+				Node[] nLeft = new Node[left]; //creates new array size n/2
+				Node[] nRight = new Node[right]; //creates new array of the rest of the original array
+
+
+				for (int i = 0; i < left; i++)
+					nLeft[i] = inNode[i]; // fills the left array
+				for (int i = 0; i < right; i++)
+					nRight[i] = inNode[i + left]; //fills the right array
+				leftMin = findClosestPoints(nLeft); //recursively finds points at most 1 apart from each other using recursion
+				rightMin = findClosestPoints(nRight);//recursively finds points at most 1 apart from each other using recursion
+				closest = merge(leftMin, rightMin);//merges the found points and finds the minimum between the two
+				return closest;
+			}
+			return closest;
+	}
+
+	private Node[] merge(Node[] nLeft, Node[] nRight) //finds the smallest points between a set of 2 points
+	{
+		double d1 = 999999999;
+		double d2 = 999999999;
+		if(nLeft.length != 1) { //ensures that the algorithm does not get an error
+			d1 = distance(nLeft[0], nLeft[1]);
+		}
+		else{ //for if one of the input points is a size 1
+			System.out.println("Solving Problem at Point " + nLeft[0].toString() + " ... Point[" + nLeft[0].toString() + "]");
+			System.out.println("Found Solution: INF");
+		}
+		if(nRight.length != 1) { //ensures that the algorithm does not get an error
+			d2 = distance(nRight[0], nRight[1]);
+		}
+		else{ //for if one of the input points is a size 1
+			System.out.println("Solving Problem at Point " + nRight[0].toString() + " ... Point[" + nRight[0].toString() + "]");
+			System.out.println("Found Solution: INF");
+		}
+
+		double D = d1 < d2 ? d1 : d2; //uses the ? conditional operator to prevent excessive if - else statements in determining the smallest value
+		Node[] min = d1 < d2 ? nLeft : nRight; //uses the ? conditional operator to prevent excessive if - else statements in determining the smallest point
+
+		if(D < minimum) //if the smallest value is smaller than the instance variable, then making the point the smallest instance variable
 		{
-			int m = (l+r)/2;
-			sort(inNode, l, m);
-			sort(inNode , m+1, r);
-			merge(inNode, l, m, r);
+			minimum = D;
+			minimumPoint = min;
 		}
-		return inNode;
+		System.out.println("Combining Problems: " + Arrays.toString(nLeft) + " and " + Arrays.toString(nRight));
+		System.out.println("Found Solution: " + min[0].toString() + ", " + min[1].toString() + ", Distance: " + D);
+		return min;
 	}
 
-	public void findSmallestDistance(Node[] inNode, int l, int r)
-	{
-		int m = (l + r) / 2;
-		if(l < r-1) {
-			System.out.println("Solving Problem at Point[" + l + "]... Point[" + r + "]");
-			System.out.println("Dividing at Point[" + m + "]");
-			findSmallestDistance(inNode, l, m);
-			System.out.println("Solving Problem at Point[" + l + "]... Point[" + m + "]");
-			double left = distanceFormula(inNode, l, m);
-			findSmallestDistance(inNode, m + 1, r);
-			System.out.println("Solving Problem at Point[" +(m+1) + "]... Point[" + r + "]");
-			double right = distanceFormula(inNode, m + 1, r);
-		}
-	}
-
-	public double distanceFormula(Node[] inNode, int l, int r)
+	private double distance(Node x1, Node x2) //calculates the distance between 2 points
 	{
 		double length = 0;
-		if(l == r)
-		{
-			length = 999999999;
+		System.out.println("Solving Problem at Point " + x1.toString() + " ... Point[" + x2.toString() + "]");
+
+			double xa = x1.getX();
+			double xb = x2.getX();
+			double ya = x1.getY();
+			double yb = x2.getY();
+			double xLength = Math.pow(xb - xa, 2); //(x2+x1)^2
+			double yLength = Math.pow(yb - ya, 2); //(y2 + y1)^2
+			length = Math.pow(xLength+yLength, .5); //sqrt(xLength + yLength)
+			System.out.println("Found Result with length: " + length);
 			return length;
-		}
-		else{
-			double x1 = inNode[l].getX();
-			double x2 = inNode[r].getX();
-			double y1 = inNode[l].getY();
-			double y2 = inNode[r].getY();
-			double xLength = Math.pow(x2 - x1, 2);
-			double yLength = Math.pow(y2 - y1, 2);
-			length = Math.pow(xLength+yLength, .5);
-			System.out.println(length);
-			return length;
-		}
 	}
+
+	public static final Comparator<Node> xComparator = new Comparator<Node>() { //java util comparator extension used to sort x values then y values for Arrays.sort()
+		public int compare(Node a, Node b) {
+			if (a.x < b.x) {
+				return -1;
+			}
+			if (a.x > b.x) {
+				return 1;
+			}
+			//if equal, sort by y values
+			if (a.y < b.y) {
+				return -1;
+			}
+			if (a.y > b.y) {
+				return 1;
+			}
+			return 0;
+		}
+	};
 }
